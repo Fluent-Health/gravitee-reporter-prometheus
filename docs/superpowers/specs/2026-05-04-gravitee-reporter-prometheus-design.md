@@ -163,6 +163,14 @@ IT profile (`-Pintegration-test`) runs via `maven-failsafe-plugin`, matching gcl
 
 ---
 
+## Security
+
+The `/metrics` endpoint is unauthenticated. Grafana Cloud scraping is done via **Grafana Alloy running in-cluster**, which scrapes `http://gateway-pod:PORT/metrics` locally and pushes to Grafana Cloud via remote_write. The port is never internet-exposed; network policy at the cluster level provides sufficient isolation.
+
+Bearer token auth is explicitly out of scope for this reason.
+
+---
+
 ## Out of Scope
 
 - Message metrics (`MessageMetrics` reportable) — not needed for the Prometheus use case
