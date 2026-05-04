@@ -1,0 +1,146 @@
+/*
+ * Copyright © 2015 Fluent Health (https://fluentinhealth.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.gravitee.reporter.prometheus;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
+
+import io.gravitee.node.api.monitor.Monitor;
+import io.gravitee.reporter.api.health.EndpointStatus;
+import io.gravitee.reporter.api.v4.log.Log;
+import io.gravitee.reporter.api.v4.metric.MessageMetrics;
+import io.gravitee.reporter.api.v4.metric.Metrics;
+import io.gravitee.reporter.prometheus.metrics.ApiMetrics;
+import io.prometheus.metrics.model.registry.PrometheusRegistry;
+import java.lang.reflect.Field;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class PrometheusReporterTest {
+
+  @Mock
+  private PrometheusReporterConfiguration cfg;
+
+  @Mock
+  private ApiMetrics apiMetrics;
+
+  private PrometheusReporter reporter;
+
+  @BeforeEach
+  void setUp() throws Exception {
+    when(cfg.isEnabled()).thenReturn(true);
+    when(cfg.getPort()).thenReturn(0); // port 0 = OS assigns a free port
+    when(apiMetrics.getRegistry()).thenReturn(new PrometheusRegistry());
+
+    reporter = new PrometheusReporter();
+    inject(reporter, "cfg", cfg);
+    inject(reporter, "apiMetrics", apiMetrics);
+
+    reporter.doStart();
+  }
+
+  // ===== canHandle =====
+
+  @Test
+  void metricsAreHandledWhenEnabled() {
+    assertThat(reporter.canHandle(PrometheusTestSupport.metrics(200))).isTrue();
+  }
+
+  @Test
+  void endpointStatusIsHandledWhenEnabled() {
+    assertThat(
+      reporter.canHandle(PrometheusTestSupport.endpointStatus(true))
+    ).isTrue();
+  }
+
+  @Test
+  void logIsNotHandled() {
+    assertThat(reporter.canHandle(Log.builder().build())).isFalse();
+  }
+
+  @Test
+  void messageMetricsIsNotHandled() {
+    assertThat(reporter.canHandle(MessageMetrics.builder().build())).isFalse();
+  }
+
+  @Test
+  void monitorIsNotHandled() {
+    assertThat(reporter.canHandle(mock(Monitor.class))).isFalse();
+  }
+
+  @Test
+  void disabledReporterHandlesNothing() {
+    when(cfg.isEnabled()).thenReturn(false);
+    assertThat(
+      reporter.canHandle(PrometheusTestSupport.metrics(200))
+    ).isFalse();
+    assertThat(
+      reporter.canHandle(PrometheusTestSupport.endpointStatus(true))
+    ).isFalse();
+  }
+
+  // ===== report =====
+
+  @Test
+  void metricsCallsRecordRequest() throws Exception {
+    Metrics m = PrometheusTestSupport.metrics(200);
+    reporter.report(m);
+    verify(apiMetrics, times(1)).recordRequest(m);
+  }
+
+  @Test
+  void endpointStatusCallsRecordHealthCheck() throws Exception {
+    EndpointStatus es = PrometheusTestSupport.endpointStatus(true);
+    reporter.report(es);
+    verify(apiMetrics, times(1)).recordHealthCheck(es);
+  }
+
+  @Test
+  void disabledReporterDoesNotDelegate() throws Exception {
+    when(cfg.isEnabled()).thenReturn(false);
+    reporter.report(PrometheusTestSupport.metrics(200));
+    verify(apiMetrics, never()).recordRequest(any());
+  }
+
+  // ===== helpers =====
+
+  private static void inject(Object target, String fieldName, Object value)
+    throws Exception {
+    Field f = findField(target.getClass(), fieldName);
+    f.setAccessible(true);
+    f.set(target, value);
+  }
+
+  private static Field findField(Class<?> clazz, String name)
+    throws NoSuchFieldException {
+    try {
+      return clazz.getDeclaredField(name);
+    } catch (NoSuchFieldException e) {
+      if (clazz.getSuperclass() != null) return findField(
+        clazz.getSuperclass(),
+        name
+      );
+      throw e;
+    }
+  }
+}
