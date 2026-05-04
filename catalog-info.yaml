@@ -1,0 +1,12 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: gravitee-reporter-prometheus
+  description: Gravitee APIM reporter plugin that exposes per-API metrics on a Prometheus /metrics endpoint
+  annotations:
+    github.com/project-slug: Fluent-Health/gravitee-reporter-prometheus
+spec:
+  type: library
+  lifecycle: production
+  owner: group:backend
+  system: apim
