@@ -6,3 +6,10 @@ target/
 *.iws
 .DS_Store
 local.properties
+.env
+*.pem
+*.key
+*.p12
+*.pfx
+service-account*.json
+*-sa-key.json

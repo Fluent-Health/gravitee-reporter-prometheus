@@ -2,18 +2,11 @@
 
 A Gravitee APIM reporter plugin that converts per-request gateway events into Prometheus metrics and exposes them on a `/metrics` HTTP endpoint. Grafana Alloy running in-cluster scrapes each gateway pod and forwards the data to Grafana Cloud. No external credentials are required — the endpoint is cluster-local only.
 
+A project by [Fluent Health](https://fluentinhealth.com).
+
 ## Quick Links
 
-- [Backstage Component](https://backstage.fluentinhealth.com/catalog/default/component/gravitee-reporter-prometheus)
 - [GitHub Releases](https://github.com/Fluent-Health/gravitee-reporter-prometheus/releases)
-
-## Team
-
-Owned by the **Backend** team.
-
-| Channel | Group |
-|---|---|
-| `#tech-team-backend` | `@backend` |
 
 ## Development
 
@@ -92,3 +85,11 @@ ApiMetrics
 `api_name` uses the human-readable API name from `getApiName()` rather than the internal Gravitee UUID so that Grafana dashboards display meaningful labels. If an API is renamed in Gravitee, existing Prometheus series retain the old label value until they expire from retention.
 
 The `/metrics` endpoint is unauthenticated. Network isolation (cluster policy) and Grafana Alloy running in-cluster provide sufficient security for this use case — no bearer token auth is implemented.
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md). Report security issues via [GitHub private vulnerability reporting](https://github.com/Fluent-Health/gravitee-reporter-prometheus/security/advisories/new).
+
+## License
+
+Apache 2.0 — see [LICENSE](./LICENSE).
