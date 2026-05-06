@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright © 2015 Fluent Health (https://fluentinhealth.com)
+    Copyright © 2026 Fluent Health (https://fluentinhealth.com)
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@
 
     <name>Gravitee.io APIM - Reporter - Prometheus</name>
     <description>Reports API gateway metrics to a Prometheus /metrics endpoint</description>
+    <inceptionYear>2026</inceptionYear>
 
     <properties>
         <gravitee-apim.version>4.9.0</gravitee-apim.version>
