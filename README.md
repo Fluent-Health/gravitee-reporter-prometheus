@@ -2,7 +2,7 @@
 
 A Gravitee APIM reporter plugin that converts per-request gateway events into Prometheus metrics and exposes them on a `/metrics` HTTP endpoint. Grafana Alloy running in-cluster scrapes each gateway pod and forwards the data to Grafana Cloud. No external credentials are required — the endpoint is cluster-local only.
 
-A project by [Fluent Health](https://fluentinhealth.com).
+A project by [Fluent Health](https://github.com/Fluent-Health).
 
 ## Quick Links
 
