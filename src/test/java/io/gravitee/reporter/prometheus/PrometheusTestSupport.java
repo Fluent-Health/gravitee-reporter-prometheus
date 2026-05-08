@@ -28,12 +28,17 @@ public final class PrometheusTestSupport {
     Metrics m = new Metrics();
     m.setApiId("api-123");
     m.setApiName("Test API");
+    m.setPlanId("plan-456");
+    m.setPlanName("Gold Plan");
+    m.setApplicationId("app-789");
+    m.setApplicationName("My App");
     m.setHttpMethod(HttpMethod.GET);
     m.setUri("/api/v1/users/42");
     m.setStatus(status);
     m.setRequestContentLength(128);
     m.setResponseContentLength(512);
     m.setGatewayResponseTimeMs(42);
+    m.setProxyResponseTimeMs(35);
     m.setTimestamp(Instant.parse("2024-01-15T12:00:00Z").toEpochMilli());
     return m;
   }

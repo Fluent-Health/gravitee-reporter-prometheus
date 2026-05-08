@@ -28,6 +28,7 @@ public class ApiMetrics {
 
   private final Counter requestsTotal;
   private final Histogram requestDuration;
+  private final Histogram proxyDuration;
   private final Counter errorsTotal;
   private final Histogram requestSize;
   private final Histogram responseSize;
@@ -40,12 +41,19 @@ public class ApiMetrics {
     requestsTotal = Counter.builder()
       .name("gravitee_api_requests_total")
       .help("Total number of API requests processed by the gateway")
-      .labelNames("api_name", "method", "status")
+      .labelNames("api_name", "method", "status", "plan_id", "plan_name", "application_id", "application_name")
       .register(registry);
 
     requestDuration = Histogram.builder()
       .name("gravitee_api_request_duration_milliseconds")
-      .help("API request duration in milliseconds")
+      .help("Total API request duration (including gateway overhead) in milliseconds")
+      .labelNames("api_name")
+      .classicUpperBounds(50, 100, 250, 500, 1000, 2500, 5000)
+      .register(registry);
+
+    proxyDuration = Histogram.builder()
+      .name("gravitee_api_proxy_duration_milliseconds")
+      .help("Backend (upstream) response time in milliseconds")
       .labelNames("api_name")
       .classicUpperBounds(50, 100, 250, 500, 1000, 2500, 5000)
       .register(registry);
@@ -53,7 +61,7 @@ public class ApiMetrics {
     errorsTotal = Counter.builder()
       .name("gravitee_api_errors_total")
       .help("Total number of API requests resulting in a 4xx or 5xx response")
-      .labelNames("api_name", "status")
+      .labelNames("api_name", "status", "plan_id", "plan_name", "application_id", "application_name")
       .register(registry);
 
     requestSize = Histogram.builder()
@@ -87,12 +95,43 @@ public class ApiMetrics {
       ? m.getHttpMethod().name()
       : "UNKNOWN";
     String status = String.valueOf(m.getStatus());
+    String planId = m.getPlanId() != null ? m.getPlanId() : "unknown";
+    String planName = m.getPlanName() != null ? m.getPlanName() : "unknown";
+    String applicationId = m.getApplicationId() != null
+      ? m.getApplicationId()
+      : "unknown";
+    String applicationName = m.getApplicationName() != null
+      ? m.getApplicationName()
+      : "unknown";
 
-    requestsTotal.labelValues(apiName, method, status).inc();
+    requestsTotal
+      .labelValues(
+        apiName,
+        method,
+        status,
+        planId,
+        planName,
+        applicationId,
+        applicationName
+      )
+      .inc();
     requestDuration.labelValues(apiName).observe(m.getGatewayResponseTimeMs());
 
+    if (m.getProxyResponseTimeMs() > 0) {
+      proxyDuration.labelValues(apiName).observe(m.getProxyResponseTimeMs());
+    }
+
     if (m.getStatus() >= 400) {
-      errorsTotal.labelValues(apiName, status).inc();
+      errorsTotal
+        .labelValues(
+          apiName,
+          status,
+          planId,
+          planName,
+          applicationId,
+          applicationName
+        )
+        .inc();
     }
     if (m.getRequestContentLength() > 0) {
       requestSize.labelValues(apiName).observe(m.getRequestContentLength());

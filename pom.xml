@@ -40,7 +40,7 @@
     <properties>
         <gravitee-apim.version>4.9.0</gravitee-apim.version>
         <prometheus.version>1.3.1</prometheus.version>
-        <maven.compiler.release>21</maven.compiler.release>
+        <maven.compiler.release>11</maven.compiler.release>
         <publish-folder-path>graviteeio-apim/plugins/reporters</publish-folder-path>
         <!-- Override Gravitee BOM's testcontainers 1.21.3 — 1.21.4 adds Docker API 1.44 support
              needed for Docker Engine 29+ which enforces minimum API version 1.44 -->

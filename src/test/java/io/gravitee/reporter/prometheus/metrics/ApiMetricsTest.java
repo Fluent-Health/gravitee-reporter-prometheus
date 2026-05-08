@@ -42,7 +42,7 @@ class ApiMetricsTest {
     apiMetrics.recordRequest(PrometheusTestSupport.metrics(200));
     String out = scrape();
     assertThat(out).contains(
-      "gravitee_api_requests_total{api_name=\"Test API\",method=\"GET\",status=\"200\"} 1.0"
+      "gravitee_api_requests_total{api_name=\"Test API\",application_id=\"app-789\",application_name=\"My App\",method=\"GET\",plan_id=\"plan-456\",plan_name=\"Gold Plan\",status=\"200\"} 1.0"
     );
   }
 
@@ -52,7 +52,7 @@ class ApiMetricsTest {
     apiMetrics.recordRequest(PrometheusTestSupport.metrics(200));
     String out = scrape();
     assertThat(out).contains(
-      "gravitee_api_requests_total{api_name=\"Test API\",method=\"GET\",status=\"200\"} 2.0"
+      "gravitee_api_requests_total{api_name=\"Test API\",application_id=\"app-789\",application_name=\"My App\",method=\"GET\",plan_id=\"plan-456\",plan_name=\"Gold Plan\",status=\"200\"} 2.0"
     );
   }
 
@@ -62,6 +62,15 @@ class ApiMetricsTest {
     String out = scrape();
     assertThat(out).contains(
       "gravitee_api_request_duration_milliseconds_count{api_name=\"Test API\"} 1"
+    );
+  }
+
+  @Test
+  void recordRequest_observesProxyDuration() {
+    apiMetrics.recordRequest(PrometheusTestSupport.metrics(200));
+    String out = scrape();
+    assertThat(out).contains(
+      "gravitee_api_proxy_duration_milliseconds_count{api_name=\"Test API\"} 1"
     );
   }
 
@@ -90,7 +99,7 @@ class ApiMetricsTest {
     apiMetrics.recordRequest(PrometheusTestSupport.metrics(404));
     String out = scrape();
     assertThat(out).contains(
-      "gravitee_api_errors_total{api_name=\"Test API\",status=\"404\"} 1.0"
+      "gravitee_api_errors_total{api_name=\"Test API\",application_id=\"app-789\",application_name=\"My App\",plan_id=\"plan-456\",plan_name=\"Gold Plan\",status=\"404\"} 1.0"
     );
   }
 
@@ -99,7 +108,7 @@ class ApiMetricsTest {
     apiMetrics.recordRequest(PrometheusTestSupport.metrics(500));
     String out = scrape();
     assertThat(out).contains(
-      "gravitee_api_errors_total{api_name=\"Test API\",status=\"500\"} 1.0"
+      "gravitee_api_errors_total{api_name=\"Test API\",application_id=\"app-789\",application_name=\"My App\",plan_id=\"plan-456\",plan_name=\"Gold Plan\",status=\"500\"} 1.0"
     );
   }
 
