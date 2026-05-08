@@ -41,12 +41,22 @@ public class ApiMetrics {
     requestsTotal = Counter.builder()
       .name("gravitee_api_requests_total")
       .help("Total number of API requests processed by the gateway")
-      .labelNames("api_name", "method", "status", "plan_id", "plan_name", "application_id", "application_name")
+      .labelNames(
+        "api_name",
+        "method",
+        "status",
+        "plan_id",
+        "plan_name",
+        "application_id",
+        "application_name"
+      )
       .register(registry);
 
     requestDuration = Histogram.builder()
       .name("gravitee_api_request_duration_milliseconds")
-      .help("Total API request duration (including gateway overhead) in milliseconds")
+      .help(
+        "Total API request duration (including gateway overhead) in milliseconds"
+      )
       .labelNames("api_name")
       .classicUpperBounds(50, 100, 250, 500, 1000, 2500, 5000)
       .register(registry);
@@ -61,7 +71,14 @@ public class ApiMetrics {
     errorsTotal = Counter.builder()
       .name("gravitee_api_errors_total")
       .help("Total number of API requests resulting in a 4xx or 5xx response")
-      .labelNames("api_name", "status", "plan_id", "plan_name", "application_id", "application_name")
+      .labelNames(
+        "api_name",
+        "status",
+        "plan_id",
+        "plan_name",
+        "application_id",
+        "application_name"
+      )
       .register(registry);
 
     requestSize = Histogram.builder()
