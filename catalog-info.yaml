@@ -21,7 +21,7 @@ metadata:
   description: Gravitee APIM reporter plugin that exposes per-API metrics on a Prometheus /metrics endpoint
   annotations:
     github.com/project-slug: Fluent-Health/gravitee-reporter-prometheus
-    fluentinhealth.com/oss: pending
+    fluentinhealth.com/oss: published
 spec:
   type: library
   lifecycle: production
