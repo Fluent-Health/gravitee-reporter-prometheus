@@ -69,6 +69,47 @@ Releases follow **semver tagging**. To publish a new release:
 | `gravitee_api_endpoint_up` | Gauge | `api_name`, `endpoint` — 1.0 up, 0.0 down |
 | `gravitee_api_health_checks_total` | Counter | `api_name`, `endpoint`, `result` (success/failure) |
 
+### API Availability (Health Checks)
+
+To emit `gravitee_api_endpoint_up` gauges, you must configure a **Health Check** service for your API. Below is a minimal configuration using the [`gravitee-io/apim`](https://registry.terraform.io/providers/gravitee-io/apim/latest) Terraform provider for a V4 API:
+
+```hcl
+resource "apim_apiv4" "my_api" {
+  name = "My Protected API"
+  # ... other fields ...
+
+  endpoint_groups = [{
+    name = "default"
+    type = "http-proxy"
+    endpoints = [{
+      name          = "primary"
+      type          = "http-proxy"
+      configuration = jsonencode({ target = "http://my-backend:8080" })
+
+      services = {
+        health_check = {
+          enabled                = true
+          type                   = "http-health-check" # Mandatory for V4 HTTP APIs
+          override_configuration = true                # Required when defined at endpoint level
+          configuration = jsonencode({
+            schedule = "*/30 * * * * *" # CRON: every 30 seconds
+            method   = "GET"
+            path     = "/health"        # Appended to endpoint target
+          })
+        }
+      }
+    }]
+  }]
+}
+```
+
+**Why these settings?**
+*   **`type = "http-health-check"`**: Specifies the V4 API service plugin responsible for monitoring HTTP backends.
+*   **`override_configuration = true`**: Mandatory if configuring the service inside an `endpoint` block to ensure it replaces any inherited (or empty) group-level service.
+*   **`schedule`**: A mandatory CRON expression. The Gateway will only emit status events (and thus Prometheus gauges) when this probe runs.
+*   **`path`**: The specific endpoint to probe. If omitted, it probes the base `target`.
+
+
 ### Architecture
 
 ```
