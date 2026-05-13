@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ["**"]
+    branches: ["main"]
   pull_request:
 
 jobs:
@@ -35,6 +35,11 @@ jobs:
           java-version: "21"
           distribution: "temurin"
           cache: maven
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.1"
 
       - name: Build plugin ZIP and run integration tests
         run: mvn --batch-mode verify -Pintegration-test
