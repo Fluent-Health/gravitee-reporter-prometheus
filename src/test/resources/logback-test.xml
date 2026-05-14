@@ -1,21 +1,32 @@
 <configuration>
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
-      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+      <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
     </encoder>
   </appender>
 
-  <root level="INFO">
+  <root level="WARN">
     <appender-ref ref="STDOUT" />
   </root>
 
-  <!-- Suppress verbose Testcontainers and Docker logs -->
-  <logger name="org.testcontainers" level="WARN" />
+  <!-- Container lifecycle (image pull, start, wait) is useful narrative -->
+  <logger name="org.testcontainers" level="INFO" />
   <logger name="com.github.dockerjava" level="WARN" />
   <logger name="org.testcontainers.shaded" level="WARN" />
+  <!-- Boot chatter from the Docker client factory; the HttpWaitStrategy lines
+       it emits are enough to see container progress. -->
+  <logger name="org.testcontainers.DockerClientFactory" level="WARN" />
+  <logger name="org.testcontainers.dockerclient" level="WARN" />
+  <logger name="org.testcontainers.images" level="WARN" />
+  <logger name="org.testcontainers.utility" level="WARN" />
 
-  <!-- Suppress container logs unless needed for debugging -->
-  <logger name="tc.management-api" level="WARN" />
-  <logger name="tc.httpbin" level="WARN" />
-  <logger name="tc.gateway" level="WARN" />
+  <!-- Plugin's own signal — keep visible in ITs (port assignment, start/stop) -->
+  <logger name="io.gravitee.reporter.prometheus" level="INFO" />
+
+  <!-- Framework "Initializing service" line fires per-test in unit tests; noise -->
+  <logger name="io.gravitee.common.service.AbstractService" level="WARN" />
+
+  <!-- Container log streams — filtered consumers route only relevant lines through -->
+  <logger name="tc.management-api" level="INFO" />
+  <logger name="tc.gateway" level="INFO" />
 </configuration>
