@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.lifecycle.Startables;
 import org.testcontainers.utility.MountableFile;
@@ -101,9 +100,7 @@ class PrometheusReporterIT {
       .withEnv("gravitee_services_core_http_host", "0.0.0.0")
       .withEnv("gravitee_services_core_http_authentication_type", "none")
       .dependsOn(mongodb)
-      .withLogConsumer(
-        new Slf4jLogConsumer(LoggerFactory.getLogger("tc.management-api"))
-      )
+      .withLogConsumer(FilteredLogConsumer.forContainer("management-api"))
       .waitingFor(
         Wait.forHttp("/_node/health").forPort(18083).forStatusCode(200)
       );
@@ -112,9 +109,6 @@ class PrometheusReporterIT {
       .withNetwork(NETWORK)
       .withNetworkAliases("httpbin")
       .withExposedPorts(8080)
-      .withLogConsumer(
-        new Slf4jLogConsumer(LoggerFactory.getLogger("tc.httpbin"))
-      )
       .waitingFor(Wait.forHttp("/get").forPort(8080).forStatusCode(200));
 
     gateway = new GenericContainer<>("graviteeio/apim-gateway:4.9.13")
@@ -141,9 +135,7 @@ class PrometheusReporterIT {
         String.valueOf(PROMETHEUS_PORT)
       )
       .dependsOn(managementApi)
-      .withLogConsumer(
-        new Slf4jLogConsumer(LoggerFactory.getLogger("tc.gateway"))
-      )
+      .withLogConsumer(FilteredLogConsumer.forContainer("gateway"))
       .waitingFor(
         Wait.forHttp("/_node/health").forPort(18082).forStatusCode(200)
       );
