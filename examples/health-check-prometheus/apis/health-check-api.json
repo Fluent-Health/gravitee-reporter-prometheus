@@ -30,9 +30,16 @@
               "type": "http-health-check",
               "overrideConfiguration": true,
               "configuration": {
-                "target": "http://httpbin:8080/status/200",
+                "target": "http://httpbin:8080/status/401",
                 "schedule": "*/10 * * * * *",
-                "method": "GET"
+                "method": "GET",
+                "headers": [
+                  { "name": "User-Agent", "value": "gravitee-healthcheck/4.9" },
+                  { "name": "X-Probe-Source", "value": "gravitee-gateway" }
+                ],
+                "assertion": "{#response.status == 200 || #response.status == 401}",
+                "successThreshold": 1,
+                "failureThreshold": 2
               }
             }
           }

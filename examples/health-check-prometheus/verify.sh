@@ -1,4 +1,20 @@
 #!/usr/bin/env bash
+#
+# Copyright © 2026 Fluent Health (https://fluentinhealth.com)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
 # Verifies that the example stack is healthy:
 #   * /example proxies through the gateway and returns 200 (API not 503'd by HC)
 #   * /metrics on the gateway exposes the health-check gauges and counters
@@ -45,6 +61,16 @@ check() {
 check 'gravitee_api_requests_total\{api_name="Stable Health Check Example"'
 check 'gravitee_api_endpoint_up\{api_name="Stable Health Check Example",endpoint="primary"\} 1\.0'
 check 'gravitee_api_health_checks_total\{api_name="Stable Health Check Example",endpoint="primary",result="success"'
+
+# The probe target returns 401 (auth-protected backend); the assertion treats
+# that as success, so the failure counter must remain absent. Track it
+# explicitly so a regression in assertion semantics is caught.
+info "Ensuring no failure samples were recorded"
+if grep -qE 'gravitee_api_health_checks_total\{api_name="Stable Health Check Example",endpoint="primary",result="failure"' <<<"$body"; then
+  fail "Failure counter present — the assertion is treating 401 as failure"
+else
+  ok "No failure samples — assertion correctly accepts 401 alongside 200"
+fi
 
 echo
 ok "Verification complete — Prometheus reporter is emitting both request and health-check metrics."

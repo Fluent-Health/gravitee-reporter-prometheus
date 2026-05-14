@@ -73,7 +73,12 @@ won't see your API return 503 just because the probe failed.
 
 To make the probe itself reliable — so the gauge actually reflects
 "is my backend reachable" rather than churning — point the health
-check at a stable URL on the backend:
+check at a stable URL on the backend and use an `assertion` to spell
+out which response codes count as healthy. The example deliberately
+probes `/status/401` (an auth-protected endpoint) and accepts both
+**200 or 401** as success, because either response proves the backend
+is up — it's only refusing to authenticate us, which is not the same
+thing as being down.
 
 ```jsonc
 // apis/health-check-api.json (excerpt)
@@ -87,11 +92,19 @@ check at a stable URL on the backend:
       "type": "http-health-check",
       "overrideConfiguration": true,
       "configuration": {
-        "target":   "http://httpbin:8080/status/200",
+        "target":   "http://httpbin:8080/status/401",
         //                                ↑
-        // Health-check probe is a separate URL — always returns 200
+        // Probe URL — separate from the API target. Returns 401 here,
+        // typical for an auth-protected /healthz behind your gateway.
         "schedule": "*/10 * * * * *",
-        "method":   "GET"
+        "method":   "GET",
+        "headers": [
+          { "name": "User-Agent",      "value": "gravitee-healthcheck/4.9" },
+          { "name": "X-Probe-Source",  "value": "gravitee-gateway" }
+        ],
+        "assertion": "{#response.status == 200 || #response.status == 401}",
+        "successThreshold": 1,
+        "failureThreshold": 2
       }
     }
   }
@@ -100,31 +113,36 @@ check at a stable URL on the backend:
 
 Key points:
 
-1. **`healthCheck.configuration.target` is a full URL**, not a path
-   suffix. It can point at any URL the gateway can resolve — including
-   a dedicated `/healthz` on the same backend, a static file, or a
-   sidecar.
-2. **API traffic uses `endpoints[].configuration.target`** independently.
+1. **`healthCheck.configuration.target` is a full URL** (not a path
+   suffix). It can point at a dedicated `/healthz`, a static file, a
+   sidecar — or, as here, the same auth-protected endpoint your real
+   clients hit.
+2. **The `assertion` MUST be wrapped in `{ … }`** — otherwise the
+   gateway treats every probe as failure and the gauge silently flips
+   to 0.0. This is the single most common configuration trap. The
+   EL inside the braces has `#response.status`, `#response.headers`,
+   and `#response.contentJson` available.
+3. **`headers` is an array of `{name, value}` objects.** Use it for
+   service-mesh routing hints, tracing IDs, or to identify probe
+   traffic in your backend's access logs.
+4. **API traffic uses `endpoints[].configuration.target`** independently.
    `/example` on the gateway → `/anything` on the backend. The two
-   targets are evaluated separately.
-3. **Omit the `assertion` field** unless you really need custom logic.
-   Without it Gravitee accepts any 2xx response as a success — exactly
-   what you want for a stable probe. A bad EL assertion silently
-   classifies every probe as failure (the bug this example originally
-   hit before being fixed).
+   targets are evaluated separately, so a quirky health probe never
+   shapes real-traffic routing.
 
 #### What *not* to do
 
-* **Don't probe an authenticated path** — every probe will return 401
-  and the result counter will fill the `failure` bucket forever.
+* **Don't omit the `{ }` around the assertion** — see point 2 above.
+* **Don't probe an authenticated path without widening the assertion
+  to accept 401** — every probe will fall into the `failure` bucket.
 * **Don't probe a CPU-heavy endpoint** — you'll add load every
   schedule tick.
 * **Don't omit `overrideConfiguration: true`** when the service is
   defined inside the endpoint — without it the group-level (empty)
   service config silently wins.
 * **Don't tighten the schedule below ~5 s** unless your backend is
-  built for it; the default `*/10 * * * * *` (every 10 s) is a
-  reasonable starting point.
+  built for it; `*/10 * * * * *` (every 10 s) is a reasonable
+  starting point.
 
 ### Reading the metrics
 
@@ -142,10 +160,11 @@ gravitee_api_health_checks_total{api_name="Stable Health Check Example",endpoint
 gravitee_api_requests_total{api_name="Stable Health Check Example",method="GET",status="200"} 5
 ```
 
-If you want to *see* the failure path, change the API definition's
-probe path to `/status/500`, `./up.sh` again, and watch
-`gravitee_api_endpoint_up` flip to `0.0` while `/example` starts
-returning 503 — exactly the trap this example is designed to avoid.
+If you want to *see* the failure path, drop `|| #response.status == 401`
+from the assertion and run `./up.sh` again — the probe will start
+landing in the `failure` bucket and the gauge will flip to `0.0`.
+On a single-endpoint API the proxied `/example` will keep returning
+200 anyway: the health-check signal is observational, not gating.
 
 ## File layout
 

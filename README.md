@@ -31,6 +31,19 @@ reporters:
 
 The `/metrics` endpoint is then available at `http://localhost:9090/metrics`.
 
+## Examples
+
+`examples/health-check-prometheus/` is a self-contained docker-compose stack that boots Gravitee APIM 4.9 with **no Elasticsearch**, configured **only via mounted `gravitee.yml` files** (no `gravitee_*` env vars), loads this plugin, and deploys a V4 API whose health check exercises the assertion / headers pattern that catches most first-time setups:
+
+```bash
+cd examples/health-check-prometheus
+./up.sh        # boot stack + deploy demo API (uses local target/ build by default)
+./verify.sh    # asserts /example returns 200 and /metrics is populated
+./down.sh
+```
+
+See [examples/health-check-prometheus/README.md](./examples/health-check-prometheus/README.md) for the full walkthrough, including why the EL `assertion` must be wrapped in `{ … }` and how to accept `200 || 401` for auth-protected probe paths.
+
 ## Testing
 
 **Unit tests** (no Docker required):
