@@ -1,0 +1,4 @@
+# up.sh drops the plugin ZIP here, and the gateway extracts it into a
+# sibling .work/ directory at first load. Both are local-only.
+*
+!.gitignore

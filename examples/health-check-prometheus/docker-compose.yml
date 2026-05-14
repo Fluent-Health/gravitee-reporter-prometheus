@@ -1,0 +1,85 @@
+#
+# Copyright © 2026 Fluent Health (https://fluentinhealth.com)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+name: gravitee-prometheus-example
+
+networks:
+  gravitee:
+    driver: bridge
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: gravitee-prom-mongo
+    networks: [gravitee]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 })"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  httpbin:
+    # The scratch-based image has no shell or tools — we can't add a Docker
+    # healthcheck. It boots in <1s; downstream services don't need to wait on it.
+    image: mccutchen/go-httpbin
+    container_name: gravitee-prom-httpbin
+    networks: [gravitee]
+
+  management-api:
+    image: graviteeio/apim-management-api:4.9.13
+    container_name: gravitee-prom-mgmt
+    networks: [gravitee]
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    ports:
+      - "8083:8083"
+    volumes:
+      - ./management-api/gravitee.yml:/opt/graviteeio-management-api/config/gravitee.yml:ro
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:18083/_node/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+
+  gateway:
+    image: graviteeio/apim-gateway:4.9.13
+    container_name: gravitee-prom-gw
+    networks: [gravitee]
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      management-api:
+        condition: service_healthy
+      httpbin:
+        condition: service_started
+    # The gateway image normally runs as gravitee (uid 1001) and cannot read
+    # files written by a host user under root-owned mounts on every platform.
+    # Running as root for the example avoids "permission denied" on plugins-ext.
+    user: root
+    ports:
+      - "8082:8082"   # gateway proxy
+      - "9090:9090"   # prometheus /metrics
+    volumes:
+      - ./gateway/gravitee.yml:/opt/graviteeio-gateway/config/gravitee.yml:ro
+      # plugins-ext must be writable — the plugin loader extracts each zip
+      # into a sibling .work directory at first load.
+      - ./plugins:/opt/graviteeio-gateway/plugins-ext
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:18082/_node/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 60

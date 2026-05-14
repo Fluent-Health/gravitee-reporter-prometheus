@@ -246,6 +246,23 @@
             </plugin>
 
             <plugin>
+                <groupId>com.hubspot.maven.plugins</groupId>
+                <artifactId>prettier-maven-plugin</artifactId>
+                <configuration>
+                    <!-- Override the parent's `**/*.{yml,yaml}` glob: the example
+                         under examples/ ships bundled Gravitee default configs
+                         verbatim, which prettier would aggressively re-flow. -->
+                    <inputGlobs>
+                        <inputGlob>src/main/java/**/*.java</inputGlob>
+                        <inputGlob>src/test/java/**/*.java</inputGlob>
+                        <inputGlob>src/**/*.json</inputGlob>
+                        <inputGlob>src/**/*.yaml</inputGlob>
+                        <inputGlob>src/**/*.yml</inputGlob>
+                    </inputGlobs>
+                </configuration>
+            </plugin>
+
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>

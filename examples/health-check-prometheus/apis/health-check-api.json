@@ -1,0 +1,50 @@
+{
+  "name": "Stable Health Check Example",
+  "apiVersion": "1.0.0",
+  "definitionVersion": "V4",
+  "type": "PROXY",
+  "description": "Demonstrates a Gravitee V4 API whose health check is purely observational: it probes a known-stable backend URL so the endpoint never gets marked DOWN, while real traffic flows through /anything on httpbin.",
+  "listeners": [
+    {
+      "type": "HTTP",
+      "paths": [{ "path": "/example" }],
+      "entrypoints": [{ "type": "http-proxy" }]
+    }
+  ],
+  "endpointGroups": [
+    {
+      "name": "default",
+      "type": "http-proxy",
+      "endpoints": [
+        {
+          "name": "primary",
+          "type": "http-proxy",
+          "weight": 1,
+          "inheritConfiguration": false,
+          "configuration": {
+            "target": "http://httpbin:8080/anything"
+          },
+          "services": {
+            "healthCheck": {
+              "enabled": true,
+              "type": "http-health-check",
+              "overrideConfiguration": true,
+              "configuration": {
+                "target": "http://httpbin:8080/status/401",
+                "schedule": "*/10 * * * * *",
+                "method": "GET",
+                "headers": [
+                  { "name": "User-Agent", "value": "gravitee-healthcheck/4.9" },
+                  { "name": "X-Probe-Source", "value": "gravitee-gateway" }
+                ],
+                "assertion": "{#response.status == 200 || #response.status == 401}",
+                "successThreshold": 1,
+                "failureThreshold": 2
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
