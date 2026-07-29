@@ -8,7 +8,15 @@ permissions:
   contents: read
 
 jobs:
+  # Never publish a ZIP that has not passed against every supported APIM
+  # version. Shares its matrix with CI.
+  integration:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/integration-matrix.yml
+
   release:
+    needs: integration
     runs-on: ubuntu-latest
     permissions:
       contents: write

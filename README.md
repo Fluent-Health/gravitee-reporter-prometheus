@@ -8,6 +8,12 @@ A project by [Fluent Health](https://github.com/Fluent-Health).
 
 - [GitHub Releases](https://github.com/Fluent-Health/gravitee-reporter-prometheus/releases)
 
+## Compatibility
+
+A single artifact covers **APIM 4.9 through 4.12**. CI verifies every release end to end against APIM 4.12.0 and 4.12.12 — see `.github/workflows/integration-matrix.yml`.
+
+Getting there needed one thing worth knowing about. From APIM 4.12 the gateway ships the Prometheus client library itself (`prometheus-metrics-*` 1.3.10), in the same package namespace as the copy bundled in this plugin, and the gateway's `-core` wins class resolution. That set includes `prometheus-metrics-tracer-common` but **not** `prometheus-metrics-tracer-initializer`, which is where `SpanContextSupplier` lives — so anything touching Prometheus *exemplars* fails with `NoClassDefFoundError` on every reported event. All metrics are therefore built `.withoutExemplars()`. Nothing is lost: no `SpanContextSupplier` was ever registered, so no exemplar was ever sampled on any version. See the note in `ApiMetrics` before re-enabling them.
+
 ## Development
 
 Prerequisites: [`asdf`](https://asdf-vm.com) and Docker.
@@ -52,7 +58,7 @@ See [examples/health-check-prometheus/README.md](./examples/health-check-prometh
 mvn verify
 ```
 
-**Integration tests** (Docker required — pulls Gravitee APIM 4.9, MongoDB 7, and go-httpbin images, ~3–5 minutes):
+**Integration tests** (Docker required — pulls Gravitee APIM, MongoDB 7, and go-httpbin images, ~3–5 minutes). Defaults to the latest supported APIM; override with `-Dapim.version=4.12.0`:
 
 ```bash
 mvn verify --activate-profiles integration-test

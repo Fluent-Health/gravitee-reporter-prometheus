@@ -37,10 +37,20 @@ public class ApiMetrics {
   public ApiMetrics(PrometheusRegistry registry) {
     this.registry = registry;
 
+    // Every metric below is built .withoutExemplars(). Exemplars are the only thing in
+    // prometheus-metrics-core that reaches for
+    // io.prometheus.metrics.tracer.initializer.SpanContextSupplier (via ExemplarSampler), and
+    // that class is absent from the gateway classpath from APIM 4.12 onward: 4.12 ships
+    // prometheus-metrics-* 1.3.10 including tracer-common but NOT tracer-initializer, and its
+    // copy of -core wins class resolution over the one bundled in this plugin. The result was a
+    // NoClassDefFoundError on every report() call. Disabling exemplars costs nothing here — no
+    // SpanContextSupplier is registered either way, so no exemplar was ever sampled — and it
+    // keeps a single artifact working across both client versions.
     requestsTotal = Counter.builder()
       .name("gravitee_api_requests_total")
       .help("Total number of API requests processed by the gateway")
       .labelNames("api_name", "method", "status")
+      .withoutExemplars()
       .register(registry);
 
     requestDuration = Histogram.builder()
@@ -48,36 +58,42 @@ public class ApiMetrics {
       .help("API request duration in milliseconds")
       .labelNames("api_name")
       .classicUpperBounds(50, 100, 250, 500, 1000, 2500, 5000)
+      .withoutExemplars()
       .register(registry);
 
     errorsTotal = Counter.builder()
       .name("gravitee_api_errors_total")
       .help("Total number of API requests resulting in a 4xx or 5xx response")
       .labelNames("api_name", "status")
+      .withoutExemplars()
       .register(registry);
 
     requestSize = Histogram.builder()
       .name("gravitee_api_request_size_bytes")
       .help("API request body size in bytes")
       .labelNames("api_name")
+      .withoutExemplars()
       .register(registry);
 
     responseSize = Histogram.builder()
       .name("gravitee_api_response_size_bytes")
       .help("API response body size in bytes")
       .labelNames("api_name")
+      .withoutExemplars()
       .register(registry);
 
     endpointUp = Gauge.builder()
       .name("gravitee_api_endpoint_up")
       .help("Whether the API backend endpoint is available (1=up, 0=down)")
       .labelNames("api_name", "endpoint")
+      .withoutExemplars()
       .register(registry);
 
     healthChecksTotal = Counter.builder()
       .name("gravitee_api_health_checks_total")
       .help("Total number of API endpoint health checks performed")
       .labelNames("api_name", "endpoint", "result")
+      .withoutExemplars()
       .register(registry);
   }
 

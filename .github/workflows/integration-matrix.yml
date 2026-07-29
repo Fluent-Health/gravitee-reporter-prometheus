@@ -1,0 +1,55 @@
+name: Integration matrix
+
+# Reusable workflow. Runs the container-backed integration tests against every
+# APIM version this reporter is expected to support.
+#
+# Legs are explicitly pinned rather than tracking the floating `latest` Docker
+# tag, so CI stays deterministic and moving a pin is always a deliberate,
+# reviewable change.
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    name: APIM ${{ matrix.apim }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    strategy:
+      # Report every leg. A break on one version must not hide the others.
+      fail-fast: false
+      matrix:
+        apim:
+          # Floor of the 4.12 line — the first release shipping
+          # prometheus-metrics-* in the gateway itself, which is what made the
+          # bundled client library collide. See ApiMetrics for why exemplars
+          # are disabled.
+          - "4.12.0"
+          # Latest published release: early warning for upstream breakage.
+          - "4.12.12"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: maven
+
+      # PrometheusTerraformIT drives the Gravitee Terraform provider.
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.1"
+          terraform_wrapper: false
+
+      - name: Integration tests
+        run: >
+          mvn --batch-mode verify -Pintegration-test
+          -Dapim.version=${{ matrix.apim }}

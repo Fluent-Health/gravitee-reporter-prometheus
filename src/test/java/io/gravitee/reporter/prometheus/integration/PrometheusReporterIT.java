@@ -83,7 +83,7 @@ class PrometheusReporterIT {
       .withNetworkAliases("mongodb");
 
     managementApi = new GenericContainer<>(
-      "graviteeio/apim-management-api:4.9.13"
+      "graviteeio/apim-management-api:" + TestVersions.APIM
     )
       .withNetwork(NETWORK)
       .withNetworkAliases("management-api")
@@ -102,7 +102,10 @@ class PrometheusReporterIT {
       .dependsOn(mongodb)
       .withLogConsumer(FilteredLogConsumer.forContainer("management-api"))
       .waitingFor(
-        Wait.forHttp("/_node/health").forPort(18083).forStatusCode(200)
+        Wait.forHttp("/_node/health")
+          .forPort(18083)
+          .forStatusCode(200)
+          .withStartupTimeout(TestVersions.CONTAINER_STARTUP_TIMEOUT)
       );
 
     httpbin = new GenericContainer<>("mccutchen/go-httpbin")
@@ -111,7 +114,9 @@ class PrometheusReporterIT {
       .withExposedPorts(8080)
       .waitingFor(Wait.forHttp("/get").forPort(8080).forStatusCode(200));
 
-    gateway = new GenericContainer<>("graviteeio/apim-gateway:4.9.13")
+    gateway = new GenericContainer<>(
+      "graviteeio/apim-gateway:" + TestVersions.APIM
+    )
       .withCreateContainerCmdModifier(cmd -> cmd.withUser("root"))
       .withNetwork(NETWORK)
       .withNetworkAliases("gateway")
@@ -137,7 +142,10 @@ class PrometheusReporterIT {
       .dependsOn(managementApi)
       .withLogConsumer(FilteredLogConsumer.forContainer("gateway"))
       .waitingFor(
-        Wait.forHttp("/_node/health").forPort(18082).forStatusCode(200)
+        Wait.forHttp("/_node/health")
+          .forPort(18082)
+          .forStatusCode(200)
+          .withStartupTimeout(TestVersions.CONTAINER_STARTUP_TIMEOUT)
       );
 
     Startables.deepStart(gateway, httpbin).join();
