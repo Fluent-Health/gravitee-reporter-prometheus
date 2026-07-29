@@ -86,7 +86,12 @@ public class PrometheusReporter
         case EndpointStatus es -> apiMetrics.recordHealthCheck(es);
         default -> {}
       }
-    } catch (Exception e) {
+    } catch (Exception | LinkageError e) {
+      // LinkageError as well as Exception: a classpath mismatch between the client library
+      // bundled here and the one the gateway ships surfaces as NoClassDefFoundError, which is an
+      // Error and so escaped the previous `catch (Exception)`. That propagated out of the Vert.x
+      // context as an unhandled exception on every single report. Reporting is telemetry — it
+      // must never be able to take request handling down with it.
       log.warn("Unexpected error while reporting to Prometheus — skipping", e);
     }
   }
